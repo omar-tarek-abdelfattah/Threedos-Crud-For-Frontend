@@ -1,0 +1,16 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const product_service_1 = require("./product.service");
+const auth_middleware_1 = require("../../middleware/auth.middleware");
+const validation_middleware_1 = require("../../middleware/validation.middleware");
+const product_validation_1 = require("./product.validation");
+const cloudFileUpload_1 = require("../../utils/multer/cloudFileUpload");
+const router = (0, express_1.Router)();
+router.get("/", product_service_1.productService.getProducts);
+router.get("/:id", (0, validation_middleware_1.validation)(product_validation_1.productIdSchema), product_service_1.productService.getProductById);
+router.use(auth_middleware_1.authMiddleware);
+router.post("/", (0, cloudFileUpload_1.cloudFileUpload)({ validation: cloudFileUpload_1.fileValidation.image, folderName: "products" }).single("image"), (0, validation_middleware_1.validation)(product_validation_1.createProductSchema), product_service_1.productService.createProduct);
+router.patch("/:id", (0, cloudFileUpload_1.cloudFileUpload)({ validation: cloudFileUpload_1.fileValidation.image, folderName: "products" }).single("image"), (0, validation_middleware_1.validation)(product_validation_1.updateProductSchema), product_service_1.productService.updateProduct);
+router.delete("/:id", (0, validation_middleware_1.validation)(product_validation_1.productIdSchema), product_service_1.productService.deleteProduct);
+exports.default = router;

@@ -26,6 +26,10 @@ const bootstrap = () => {
 
     connectDB();
 
+    app.use("/auth", require("./modules/auth/auth.controller").default);
+    app.use("/users", require("./modules/user/user.controller").default);
+    app.use("/products", require("./modules/product/product.controller").default);
+
     app.use(globalErrorHandling)
 
     app.get('/', (req: Request, res: Response) => {

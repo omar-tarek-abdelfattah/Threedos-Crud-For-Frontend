@@ -21,6 +21,9 @@ const bootstrap = () => {
     app.use(express_1.default.json());
     app.use(express_1.default.urlencoded({ extended: true }));
     (0, db_connection_1.default)();
+    app.use("/auth", require("./modules/auth/auth.controller").default);
+    app.use("/users", require("./modules/user/user.controller").default);
+    app.use("/products", require("./modules/product/product.controller").default);
     app.use(error_response_1.globalErrorHandling);
     app.get('/', (req, res) => {
         res.send({ message: "hello world" });
