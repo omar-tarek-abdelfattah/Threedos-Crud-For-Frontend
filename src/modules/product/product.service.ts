@@ -5,14 +5,15 @@ import { NotFoundException, ForbiddenException, BadRequestException } from "../.
 import { successResponse } from "../../utils/response/success.response";
 import type { CreateProductDto, UpdateProductDto, UpdateProductIdDto, ProductIdDto } from "./product.dto";
 import { Types } from "mongoose";
+import { s3Event } from "../../utils/multer/s3.events";
 
 class ProductService {
     private productModel = new ProductRepository(ProductModel);
 
     createProduct = async (req: Request, res: Response) => {
-        const { title, description, price, imageUrl } = req.body as CreateProductDto;
+        const { title, description, price } = req.body as CreateProductDto;
         const userId = req.user?._id;
-        const finalImageUrl = req.file?.path || imageUrl;
+        const finalImageUrl = req.file?.path;
 
         const product = await this.productModel.create({
             data: [{
@@ -26,6 +27,22 @@ class ProductService {
 
         if (!product) {
             throw new BadRequestException("something went wrong with creating a new product");
+        }
+
+        if (req.file) {
+            s3Event.emit("upload", {
+                filePath: req.file.path,
+                mimetype: req.file.mimetype,
+                originalname: req.file.originalname,
+                folderName: "products",
+                onSuccess: async (result: { filename: string, url: string }) => {
+                    await this.productModel.findOneAndUpdate({
+                        filter: { _id: product[0]?._id },
+                        update: { imageUrl: result.url },
+                        options: { new: true }
+                    });
+                }
+            });
         }
 
         return successResponse({
@@ -68,9 +85,9 @@ class ProductService {
 
     updateProduct = async (req: Request, res: Response) => {
         const { id } = req.params as UpdateProductIdDto;
-        const { title, description, price, imageUrl } = req.body as UpdateProductDto;
+        const { title, description, price } = req.body as UpdateProductDto;
         const userId = req.user?._id;
-        const finalImageUrl = req.file?.path || imageUrl;
+        const finalImageUrl = req.file?.path
 
         const product = await this.productModel.findOne({ filter: { _id: id } });
 
@@ -87,6 +104,22 @@ class ProductService {
             update: { title, description, price, imageUrl: finalImageUrl },
             options: { new: true }
         });
+
+        if (req.file) {
+            s3Event.emit("upload", {
+                filePath: req.file.path,
+                mimetype: req.file.mimetype,
+                originalname: req.file.originalname,
+                folderName: "products",
+                onSuccess: async (result: { filename: string, url: string }) => {
+                    await this.productModel.findOneAndUpdate({
+                        filter: { _id: id },
+                        update: { imageUrl: result.url },
+                        options: { new: true }
+                    });
+                }
+            });
+        }
 
         return successResponse({
             res,
