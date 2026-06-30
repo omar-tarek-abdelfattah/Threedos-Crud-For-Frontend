@@ -4,8 +4,8 @@ info:
   version: 1.0.0
   description: API documentation for the frontend CRUD app.
 servers:
-  - url: http://localhost:3000
-    description: Local development server
+  - url: https://threedos-crud-for-frontend-production.up.railway.app
+    description: Production server
 components:
   securitySchemes:
     bearerAuth:
