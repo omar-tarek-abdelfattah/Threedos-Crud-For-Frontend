@@ -93,8 +93,6 @@ class ProductService {
         const { id } = req.params as UpdateProductIdDto;
         const { title, description, price } = req.body as UpdateProductDto;
         const userId = req.user?._id;
-        const finalImageUrl = req.file?.path
-
         const product = await this.productModel.findOne({ filter: { _id: id } });
 
         if (!product) {
@@ -105,9 +103,12 @@ class ProductService {
             throw new ForbiddenException("You are not authorized to update this product");
         }
 
+        const updateData: any = { title, description, price };
+        if (req.file) updateData.imageUrl = req.file.path;
+
         const updatedProduct = await this.productModel.findOneAndUpdate({
             filter: { _id: id },
-            update: { title, description, price, imageUrl: finalImageUrl },
+            update: updateData,
             options: { new: true }
         });
 
