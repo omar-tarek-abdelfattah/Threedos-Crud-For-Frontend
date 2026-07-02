@@ -12,15 +12,35 @@ class ProductService {
 
     createProduct = async (req: Request, res: Response) => {
         const { title, description, price } = req.body as CreateProductDto;
+
+        if (!req.file) {
+            throw new BadRequestException("Image is required");
+        }
+
+        const awsKey = `products/${req.file.originalname}`;
+        const imageUrl = `https://threedos-crud-server.s3.us-east-1.amazonaws.com/${awsKey}`;
+
+        s3Event.emit("upload", {
+            fileBuffer: req.file.buffer,
+            filePath: req.file.path,
+            mimetype: req.file.mimetype,
+            originalname: req.file.originalname,
+            folderName: "products",
+            filenameOverride: awsKey,
+
+        })
+
+
+
+
         const userId = req.user?._id;
-        const finalImageUrl = req.file?.path;
 
         const product = await this.productModel.create({
             data: [{
                 title,
                 description,
                 price,
-                imageUrl: finalImageUrl as string,
+                imageUrl: imageUrl,
                 createdBy: userId as Types.ObjectId,
             }]
         });
@@ -29,21 +49,7 @@ class ProductService {
             throw new BadRequestException("something went wrong with creating a new product");
         }
 
-        if (req.file) {
-            s3Event.emit("upload", {
-                filePath: req.file.path,
-                mimetype: req.file.mimetype,
-                originalname: req.file.originalname,
-                folderName: "products",
-                onSuccess: async (result: { filename: string, url: string }) => {
-                    await this.productModel.findOneAndUpdate({
-                        filter: { _id: product[0]?._id },
-                        update: { imageUrl: result.url },
-                        options: { new: true }
-                    });
-                }
-            });
-        }
+
 
         return successResponse({
             res,

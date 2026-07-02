@@ -13,34 +13,31 @@ class ProductService {
     productModel = new product_repository_1.ProductRepository(Product_model_1.default);
     createProduct = async (req, res) => {
         const { title, description, price } = req.body;
+        if (!req.file) {
+            throw new error_response_1.BadRequestException("Image is required");
+        }
+        const awsKey = `products/${req.file.originalname}`;
+        const imageUrl = `https://threedos-crud-server.s3.us-east-1.amazonaws.com/${awsKey}`;
+        s3_events_1.s3Event.emit("upload", {
+            fileBuffer: req.file.buffer,
+            filePath: req.file.path,
+            mimetype: req.file.mimetype,
+            originalname: req.file.originalname,
+            folderName: "products",
+            filenameOverride: awsKey,
+        });
         const userId = req.user?._id;
-        const finalImageUrl = req.file?.path;
         const product = await this.productModel.create({
             data: [{
                     title,
                     description,
                     price,
-                    imageUrl: finalImageUrl,
+                    imageUrl: imageUrl,
                     createdBy: userId,
                 }]
         });
         if (!product) {
             throw new error_response_1.BadRequestException("something went wrong with creating a new product");
-        }
-        if (req.file) {
-            s3_events_1.s3Event.emit("upload", {
-                filePath: req.file.path,
-                mimetype: req.file.mimetype,
-                originalname: req.file.originalname,
-                folderName: "products",
-                onSuccess: async (result) => {
-                    await this.productModel.findOneAndUpdate({
-                        filter: { _id: product[0]?._id },
-                        update: { imageUrl: result.url },
-                        options: { new: true }
-                    });
-                }
-            });
         }
         return (0, success_response_1.successResponse)({
             res,
