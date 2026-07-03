@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { v4 as uuidv4 } from "uuid";
 import ProductModel from "../../DB/models/Product.model";
 import { ProductRepository } from "../../DB/repositories/product.repository";
 import { NotFoundException, ForbiddenException, BadRequestException } from "../../utils/response/error.response";
@@ -17,7 +18,7 @@ class ProductService {
             throw new BadRequestException("Image is required");
         }
 
-        const awsKey = `products/${req.file.originalname}`;
+        const awsKey = `products/${uuidv4()}_${req.file.originalname}`;
         const imageUrl = `https://threedos-crud-server.s3.us-east-1.amazonaws.com/${awsKey}`;
 
         s3Event.emit("upload", {
